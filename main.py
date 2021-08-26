@@ -77,11 +77,10 @@ LEVELS = [
 level = 0  # начнем с нулевого для простоты
 
 # БОНУСЫ
-bonus = [
-    {'type': 'speed_ball', 'timer': 5000},
-    {'type': 'wide_bat', 'timer': 5000}
-]
+BONUSES = ['speed_ball', 'wide_bat']
+BONUS_TIME = 10000
 current_bonus = None
+current_bonus_type = ''
 
 
 def get_bricks():
@@ -217,7 +216,7 @@ while running:
                 if len(bricks) == 0:
                     game_mode = 'next_level'
                     level += 1
-                    if level > len(LEVELS):
+                    if level == len(LEVELS):
                         game_mode = 'win'
             else:
                 bricks[index] = (bricks[index][0] - 1, bricks[index][1])
@@ -226,35 +225,39 @@ while running:
         pygame.draw.rect(screen, BRICK_COLORS[brick[0]], brick[1])
 
     pygame.draw.rect(screen, YELLOW, bat_rect)
-    pygame.draw.circle(screen, WHITE, (ball_x, ball_y), BALL_R)
+    ball_color = WHITE
+    if current_bonus is not None and current_bonus_type == 'speed_ball' and current_bonus['lastTime'] != 0:
+        ball_color = FIRE_BRICK
+    pygame.draw.circle(screen, ball_color, (ball_x, ball_y), BALL_R)
 
     if game_mode == 'play' and current_bonus is not None:
-        current_bonus['y'] += 0.5
-        if current_bonus['y'] > H:
-            current_bonus = None
-        elif current_bonus['lastTime'] == 0:
-            if bat_rect.colliderect(pygame.Rect(current_bonus['x'], current_bonus['y'], 10, 10)):
+        if current_bonus['lastTime'] == 0:
+            current_bonus['y'] += 1
+            if current_bonus['y'] > H:
+                current_bonus = None
+            elif bat_rect.colliderect(pygame.Rect(current_bonus['x'], current_bonus['y'], 10, 10)):
                 # поймали бонус
                 current_bonus['lastTime'] = pygame.time.get_ticks()
-                if current_bonus['type'] == 'speed_ball':
-                    ball_speed *= 2
-                elif current_bonus['type'] == 'wide_bat':
+                if current_bonus_type == 'speed_ball':
+                    ball_speed *= 1.5
+                elif current_bonus_type == 'wide_bat':
                     bat_width *= 2
                     bat_rect.width = bat_width
             else:
                 screen.blit(current_bonus['text'], (current_bonus['x'], current_bonus['y']))
         else:
-            # считаем время до отмены бонуса
+            # проверяем таймер отмены бонуса
             currentTime = pygame.time.get_ticks()
-            if currentTime - current_bonus['lastTime'] > current_bonus['timer']:
+            if currentTime - current_bonus['lastTime'] > BONUS_TIME:
                 current_bonus = None
                 ball_speed = BALL_SPEED_DEFAULT
                 bat_width = BAT_WIDTH_DEFAULT
                 bat_rect.width = bat_width
     elif game_mode == 'play' and current_bonus is None:
-        current_bonus = random.choice(bonus)
+        current_bonus_type = random.choice(BONUSES)
+        current_bonus = {}
         bonus_color = GREEN
-        if current_bonus['type'] == 'speed_ball':
+        if current_bonus_type == 'speed_ball':
             bonus_color = FIRE_BRICK
         current_bonus['text'] = small_font.render('B', 1, bonus_color)
         current_bonus['y'] = BRICKS_TOP
