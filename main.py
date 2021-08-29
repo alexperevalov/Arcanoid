@@ -18,7 +18,7 @@ GREEN = (50, 205, 50)
 MAX_DXY = 6
 ball_speed = BALL_SPEED_DEFAULT = 1
 BALL_R = 10
-BALL_RECT_SIZE = int(BALL_R * 2 ** 0.5)
+BALL_RECT_SIZE = int((BALL_R * 2) ** 0.5)
 # константы для биты
 BAT_SPEED = 6
 bat_width = BAT_WIDTH_DEFAULT = 40
@@ -39,7 +39,7 @@ def bat_n_ball_init():
     # инициализация шарика
     ball_x = bat_x + bat_width // 2
     ball_y = bat_y - BALL_R
-    dx = random.randint(1, MAX_DXY) * ball_speed
+    dx = random.randint(-MAX_DXY, MAX_DXY) * ball_speed
     dy = -int(((MAX_DXY * ball_speed) ** 2 - dx ** 2) ** 0.5)
 
     # для расчета столкновений с кирпичиками будем использовать "вписанный" квадрат
@@ -63,6 +63,9 @@ BRICK_H = 30
 BORDER = 2
 
 # уровни
+# каждый уровень - список из 30-ти цифр 0..3
+# где 0 - пусто
+# 1..3 - количество ударов, которые разбивают кирпич
 LEVELS = [
     [0, 0, 0, 1, 1, 1, 1, 0, 0, 0,
      0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
@@ -70,6 +73,9 @@ LEVELS = [
     [1, 3, 3, 3, 1, 1, 3, 3, 3, 1,
      1, 1, 2, 1, 1, 1, 1, 2, 1, 1,
      1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+     0, 2, 0, 2, 0, 2, 0, 2, 0, 2,
+     0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
     [0, 3, 3, 3, 3, 3, 3, 3, 3, 0,
      0, 3, 3, 3, 3, 3, 3, 3, 3, 0,
      0, 3, 3, 3, 3, 3, 3, 3, 3, 0],
@@ -78,6 +84,7 @@ level = 0  # начнем с нулевого для простоты
 
 # БОНУСЫ
 BONUSES = ['speed_ball', 'wide_bat']
+BONUS_FALLING_SPEED = 1
 BONUS_TIME = 10000
 current_bonus = None
 current_bonus_type = ''
@@ -89,15 +96,20 @@ def get_bricks():
     for i in range(BRICK_ROWS):
         for j in range(BRICKS_IN_ROW):
             if lv[i * BRICKS_IN_ROW + j]:
-                rects.append((lv[i * BRICKS_IN_ROW + j],
-                              pygame.Rect(j * BRICK_W + BORDER, i * BRICK_H + BORDER + BRICKS_TOP, BRICK_W - BORDER,
-                                          BRICK_H - BORDER)))
+                # формируем список, где каждый элемент - список из двух элементов
+                # "сила" (этоже цвет) кирпичика и
+                # Rect объект для кирпичика - будет использоваться для отрисовки и для проверки столкновений
+                rects.append([lv[i * BRICKS_IN_ROW + j],
+                              pygame.Rect(j * BRICK_W + BORDER,
+                                          i * BRICK_H + BORDER + BRICKS_TOP,
+                                          BRICK_W - BORDER,
+                                          BRICK_H - BORDER)])
     return rects
 
 
 bricks = get_bricks()
-points = 0
-lives = 3
+points = 0  # очки
+lives = 3  # жизней на старте
 
 points_font = pygame.font.SysFont('comic sans ms', 18)
 small_font = pygame.font.SysFont('comic sans ms', 16)
@@ -136,7 +148,6 @@ while running:
             if ev.key == pygame.K_RIGHT:
                 moving = 'right'
             if ev.key == pygame.K_SPACE and game_mode == 'start':
-                # isShot = True
                 game_mode = 'play'
 
         if ev.type == pygame.KEYUP:
@@ -167,16 +178,16 @@ while running:
         # отскок от биты
         elif y + BALL_R >= bat_rect.top and bat_rect.left - BALL_R <= x <= bat_rect.left + bat_width + BALL_R:
             dx = (ball_x - (bat_rect.left + bat_width // 2)) / (
-                    bat_width // 2 + BALL_R) * MAX_DXY * ball_speed  # сложные вычисления для определения направления отскока
-                                                                     # спасибо папа!!!
-            if dx == 0:
+                bat_width // 2 + BALL_R) * MAX_DXY * ball_speed  # сложные вычисления для определения направления
+                                                                 # отскока
+            if dx == 0:  # запретим вертикальный отскок!
                 dx = ball_speed
             dy = -int(abs((MAX_DXY * ball_speed) ** 2 - dx ** 2) ** 0.5)
-            if dy == 0:
+            if dy == 0:  # запретим и горизонтальный отскок тоже!
                 dy = -1
             ball_x += dx
             ball_y += dy
-        elif y > H:
+        elif y > H:  # шарик уходит за нижнюю границу
             lives -= 1
             if lives == 0:
                 game_mode = 'gameover'
@@ -190,7 +201,10 @@ while running:
         ball_rect.top = ball_y - BALL_RECT_SIZE // 2
 
         # проверяем столкновения с кирпичиками
-        brick_rect_list = [r[1] for r in bricks]
+        brick_rect_list = []
+        for r in bricks:
+            # формируем список Rect'ов
+            brick_rect_list.append(r[1])
         index = ball_rect.collidelist(brick_rect_list)
         if index != -1:
             # есть столкновение, определяем направление отскока шарика
@@ -219,6 +233,7 @@ while running:
                     if level == len(LEVELS):
                         game_mode = 'win'
             else:
+                # еще держится, но уже слабее ))
                 bricks[index] = (bricks[index][0] - 1, bricks[index][1])
 
     for brick in bricks:
@@ -232,7 +247,8 @@ while running:
 
     if game_mode == 'play' and current_bonus is not None:
         if current_bonus['lastTime'] == 0:
-            current_bonus['y'] += 1
+            # бонус "падает"
+            current_bonus['y'] += BONUS_FALLING_SPEED
             if current_bonus['y'] > H:
                 current_bonus = None
             elif bat_rect.colliderect(pygame.Rect(current_bonus['x'], current_bonus['y'], 10, 10)):
@@ -254,6 +270,7 @@ while running:
                 bat_width = BAT_WIDTH_DEFAULT
                 bat_rect.width = bat_width
     elif game_mode == 'play' and current_bonus is None:
+        # "запускаем" бонус
         current_bonus_type = random.choice(BONUSES)
         current_bonus = {}
         bonus_color = GREEN
