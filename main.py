@@ -89,6 +89,13 @@ BONUS_TIME = 10000
 current_bonus = None
 current_bonus_type = ''
 
+# ЗВУКИ
+hit_sound = pygame.mixer.Sound('sounds/hit.wav')
+fail_sound = pygame.mixer.Sound('sounds/fail.wav')
+done_sound = pygame.mixer.Sound('sounds/next_level.wav')
+b_cancel_sound = pygame.mixer.Sound('sounds/bonus_cancel.wav')
+b_ext_sound = pygame.mixer.Sound('sounds/extension.wav')
+b_fast_ball_sound = pygame.mixer.Sound('sounds/fast_ball.wav')
 
 def get_bricks():
     lv = LEVELS[level]
@@ -187,8 +194,10 @@ while running:
                 dy = -1
             ball_x += dx
             ball_y += dy
+            pygame.mixer.Sound.play(hit_sound)
         elif y > H:  # шарик уходит за нижнюю границу
             lives -= 1
+            pygame.mixer.Sound.play(fail_sound)
             if lives == 0:
                 game_mode = 'gameover'
             else:
@@ -209,6 +218,7 @@ while running:
         if index != -1:
             # есть столкновение, определяем направление отскока шарика
             brick = bricks[index][1]
+            pygame.mixer.Sound.play(hit_sound)
             if dx > 0:
                 delta_x = ball_rect.right - brick.left
             else:
@@ -230,6 +240,7 @@ while running:
                 if len(bricks) == 0:
                     game_mode = 'next_level'
                     level += 1
+                    pygame.mixer.Sound.play(done_sound)
                     if level == len(LEVELS):
                         game_mode = 'win'
             else:
@@ -256,15 +267,18 @@ while running:
                 current_bonus['lastTime'] = pygame.time.get_ticks()
                 if current_bonus_type == 'speed_ball':
                     ball_speed *= 1.5
+                    pygame.mixer.Sound.play(b_fast_ball_sound)
                 elif current_bonus_type == 'wide_bat':
                     bat_width *= 2
                     bat_rect.width = bat_width
+                    pygame.mixer.Sound.play(b_ext_sound)
             else:
                 screen.blit(current_bonus['text'], (current_bonus['x'], current_bonus['y']))
         else:
             # проверяем таймер отмены бонуса
             currentTime = pygame.time.get_ticks()
             if currentTime - current_bonus['lastTime'] > BONUS_TIME:
+                pygame.mixer.Sound.play(b_cancel_sound)
                 current_bonus = None
                 ball_speed = BALL_SPEED_DEFAULT
                 bat_width = BAT_WIDTH_DEFAULT
