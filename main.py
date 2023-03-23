@@ -128,6 +128,7 @@ gameover_text = big_font.render('GAME OVER', 1, RED)
 welldone_text = mid_font.render('СУПЕР! ТЫ МОЛОДЕЦ!', 1, RED)
 nextlevel_text = mid_font.render('СЛЕДУЮЩИЙ УРОВЕНЬ...', 1, GREEN)
 win_text = big_font.render('WIN', 1, GREEN)
+press_space_text = points_font.render('жми <пробел> и играй еще раз!', 1, YELLOW)
 
 lastTime = 0
 currentTime = 0
@@ -156,6 +157,12 @@ while running:
                 moving = 'right'
             if ev.key == pygame.K_SPACE and game_mode == 'start':
                 game_mode = 'play'
+            if ev.key == pygame.K_SPACE and game_mode == 'gameover':
+                game_mode = 'start'
+                points = 0
+                bat_n_ball_init()
+                lastTime = 0  # сброс таймера
+                bricks = get_bricks()
 
         if ev.type == pygame.KEYUP:
             if ev.key == pygame.K_LEFT or ev.key == pygame.K_RIGHT:
@@ -300,12 +307,12 @@ while running:
         ball_speed = BALL_SPEED_DEFAULT
         bat_width = BAT_WIDTH_DEFAULT
         screen.fill(BLACK)
-        screen.blit(welldone_text, (40, 140))
+        screen.blit(welldone_text, (70, 140))
         currentTime = pygame.time.get_ticks()
         if lastTime == 0:
             lastTime = currentTime  # запускаем таймер
         elif 4000 >= currentTime - lastTime > 1000:
-            screen.blit(nextlevel_text, (30, 220))
+            screen.blit(nextlevel_text, (60, 220))
         elif currentTime - lastTime > 4000:
             game_mode = 'start'
             lives += 1  # вознаграждение: +1 жизнь
@@ -318,8 +325,24 @@ while running:
         screen.blit(win_text, (170, 140))
 
     if game_mode == 'gameover':
+        lives = 3
+        level = 0
+        current_bonus = None
+        ball_speed = BALL_SPEED_DEFAULT
+        bat_width = BAT_WIDTH_DEFAULT
         screen.fill(BLACK)
-        screen.blit(gameover_text, (50, 140))
+        screen.blit(gameover_text, (80, 140))
+        currentTime = pygame.time.get_ticks()
+        if lastTime == 0:
+            lastTime = currentTime  # запускаем таймер
+        elif 20000 >= currentTime - lastTime > 1000:
+            screen.blit(press_space_text, (120, 230))
+        elif currentTime - lastTime > 20000:
+            game_mode = 'start'
+            points = 0
+            bat_n_ball_init()
+            lastTime = 0  # сброс таймера
+            bricks = get_bricks()
 
     screen.blit(points_font.render(str(points), 1, ORANGE), (10, 10))
     for li in range(lives):
