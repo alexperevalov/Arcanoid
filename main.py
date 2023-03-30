@@ -13,6 +13,7 @@ ORANGE = (255, 140, 0)
 BLUE = (0, 0, 255)
 YELLOW = (240, 255, 48)
 GREEN = (50, 205, 50)
+GREY = (50, 50, 50)
 
 # константы для шарика
 MAX_DXY = 6
@@ -297,7 +298,7 @@ while running:
         bonus_color = GREEN
         if current_bonus_type == 'speed_ball':
             bonus_color = FIRE_BRICK
-        current_bonus['text'] = small_font.render('B', 1, bonus_color)
+        current_bonus['text'] = small_font.render('B', 1, bonus_color, GREY)
         current_bonus['y'] = BRICKS_TOP
         current_bonus['x'] = random.randint(50, W - 60)
         current_bonus['lastTime'] = 0
